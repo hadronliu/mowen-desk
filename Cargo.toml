@@ -5,7 +5,7 @@ edition = "2021"
 description = "墨问桌垫：极趣 Note 4 墨水屏 × 墨问 —— 语音速记机 + 动态阅读器"
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/your-name/mowen-desk"
+repository = "https://github.com/hadronliu/mowen-desk"
 keywords = ["e-ink", "zectrix", "mowen", "epaper", "notes"]
 categories = ["command-line-utilities"]
 

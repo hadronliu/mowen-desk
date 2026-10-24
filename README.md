@@ -37,7 +37,7 @@
 ## 快速开始
 
 ```bash
-git clone https://github.com/your-name/mowen-desk.git
+git clone https://github.com/hadronliu/mowen-desk.git
 cd mowen-desk
 cp config.example.toml config.toml   # 填入 [mowen].api_key
 cargo run --release
