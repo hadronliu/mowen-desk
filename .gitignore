@@ -1,0 +1,4 @@
+/target
+/config.toml
+/data
+vendor/zectrix-local-push-sdk/target

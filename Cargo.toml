@@ -1,0 +1,22 @@
+[package]
+name = "mowen-desk"
+version = "0.1.0"
+edition = "2021"
+description = "墨问桌垫：极趣 Note 4 墨水屏 × 墨问 —— 语音速记机 + 晨报终端"
+license = "MIT"
+
+[dependencies]
+zectrix-sdk = { path = "vendor/zectrix-local-push-sdk" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "fs", "sync", "signal", "process"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+image = { version = "0.25", default-features = false, features = ["png"] }
+ab_glyph = "0.2"
+chrono = { version = "0.4", features = ["serde"] }
+toml = "0.8"
+
+[profile.release]
+lto = true
+strip = true

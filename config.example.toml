@@ -1,0 +1,69 @@
+# 墨问桌垫 配置文件
+# 复制为 config.toml 后填写。程序从工作目录读取 config.toml。
+
+[zectrix]
+# 设备 IPv4 / IPv4:端口 / 12 位设备 ID。留空 = 局域网自动发现（要求只有一台在线）
+target = ""
+client_name = "墨问桌垫"
+
+[mowen]
+# 必填。墨问小程序 → 设置 → API 里生成，Pro 会员专属
+api_key = ""
+base_url = "https://open.mowen.cn"
+# 速记与晨报是否自动公开发表（false = 保持私密，只在你的墨问里可见）
+auto_publish = false
+tags_quick = ["语音速记"]
+tags_morning = ["晨报"]
+# 每日创建配额（默认会员 10 / Pro 100），用于屏幕提醒，不强制拦截
+daily_quota = 10
+
+[ai]
+# 可选。不配则速记仅上传音频、晨报用本地模板。
+# 任何 OpenAI 兼容服务均可，例如：
+#   OpenAI:  base_url = "https://api.openai.com/v1",  chat_model = "gpt-4o-mini", asr_model = "whisper-1"
+#   智谱:    base_url = "https://open.bigmodel.cn/api/paas/v4", chat_model = "glm-4-flash", asr_model = "glm-asr"
+base_url = ""
+api_key = ""
+chat_model = ""
+asr_model = ""
+
+[morning]
+enabled = true
+# 每天生成时刻，24 小时制
+time = "07:00"
+# open-meteo 坐标（免 key）。默认北京
+latitude = 39.90
+longitude = 116.40
+# 配置了 [ai] 时，让 AI 写一段 60 字以内的晨间小语
+ai_digest = true
+
+[feed]
+# 发现动态：主页「动态」入口。两个数据源：
+#   discover —— 调墨问桌面客户端自带的 mocli（官方 mo-discover 技能同源），
+#               覆盖「关注的人发新笔记/付费笔记、被点赞、被评论、被收藏、被关注」
+#   follows  —— 逐个拉取指定作者的公开笔记（未文档化 OpenAPI 接口）
+#   auto（默认）—— 有 mocli 用 discover，失败/缺失降级 follows
+# discover 服务端限频严格：自动刷新间隔建议 ≥30 分钟，手动刷新内置 5 分钟保护
+enabled = true
+source = "auto"
+# mocli 路径，留空自动探测（PATH → /Applications/墨问.app 内置）
+mocli_path = ""
+# discover 时间范围：1h-24h / today / yesterday
+recent = "24h"
+# follows 源：关注作者 uid 列表（把作者任意一篇笔记标题告诉我，我帮你查 uid）
+follows = []
+# follows 源：每位作者每次拉取条数
+per_follow = 6
+# 刷新间隔（分钟）
+refresh_minutes = 60
+
+[render]
+# 字体文件路径。留空 = 自动探测系统字体（优先思源/ Hiragino / 苹方 / Arial Unicode）
+font_path = ""
+font_size = 20.0
+# mono / gray4 / gray16。正文阅读推荐 mono 或 gray4
+image_format = "gray4"
+
+[app]
+# 数据目录（留档、配额计数、失败录音），相对工作目录
+data_dir = "data"
