@@ -178,13 +178,13 @@ impl App {
 
 async fn repaint(app: &Arc<App>, device: &Arc<Device>) {
     let png = app.render_current().await;
-    // 录音收尾/连续推图时设备会短暂 Busy，小退避重试
-    for attempt in 0..3 {
+    // 录音收尾/连续推图时设备会短暂 Busy，递增退避重试（录音后收尾可达数秒）
+    for (attempt, wait_ms) in [1000u64, 2000, 3000, 5000].iter().enumerate() {
         match device.show_with_format(&png, app.cfg.render.format()).await {
             Ok(()) => return,
             Err(zectrix_sdk::Error::Busy) => {
-                eprintln!("[screen] 设备忙碌，第 {} 次重试", attempt + 1);
-                tokio::time::sleep(Duration::from_millis(900)).await;
+                eprintln!("[screen] 设备忙碌，{}ms 后第 {} 次重试", wait_ms, attempt + 1);
+                tokio::time::sleep(Duration::from_millis(*wait_ms)).await;
             }
             Err(e) => {
                 eprintln!("[screen] 推图失败：{e}");
