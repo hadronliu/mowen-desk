@@ -222,7 +222,7 @@ async fn main() -> Result<()> {
     });
 
     if app.ai.is_none() {
-        eprintln!("[app] 未配置 [ai]：速记不转写（只传音频附件），晨报用本地模板");
+        eprintln!("[app] 未配置 [ai]：速记不转写（只传音频附件）");
     }
 
     let (screen_tx, mut screen_rx) = mpsc::channel::<ScreenCmd>(16);
