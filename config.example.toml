@@ -14,7 +14,7 @@ base_url = "https://open.mowen.cn"
 auto_publish = false
 tags_quick = ["语音速记"]
 tags_morning = ["晨报"]
-# 每日创建配额（默认会员 10 / Pro 100），用于屏幕提醒，不强制拦截
+# 每日创建配额：默认会员 10 / Pro 会员 100（用于屏幕提醒与本地预检；服务端按会员身份判定）
 daily_quota = 10
 
 [ai]
