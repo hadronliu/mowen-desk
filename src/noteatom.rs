@@ -16,6 +16,7 @@ pub enum Inline {
 
 /// 块级内容
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Title/Quote/doc 供后续笔记类型使用（晨报功能移除后暂未使用）
 pub enum Block {
     Title(u8, String),      // level 1..=3
     Para(Vec<Inline>),
@@ -74,6 +75,7 @@ pub fn block_value(b: &Block) -> Value {
 }
 
 /// 把块列表组装成一篇笔记的 `body`
+#[allow(dead_code)]
 pub fn doc(blocks: &[Block]) -> Value {
     json!({
         "type": "doc",

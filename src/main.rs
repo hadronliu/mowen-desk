@@ -1,8 +1,8 @@
 //! 墨问桌垫：极趣 Note 4 墨水屏 × 墨问。
 //!
-//! 白天是速记机：长按设备确认键说话 → 转写（可选 AI）→ 音频+文字发墨问。
-//! 早上是晨报终端：定时生成晨报 → 发墨问存档 + 推墨水屏阅读。
-//! 上下键翻页，确认键选择/返回。
+//! 语音速记机：长按设备确认键说话 → 转写（可选 AI）→ 音频+文字发墨问。
+//! 动态阅读器：主页「动态」入口浏览墨问发现流（关注更新/点赞/评论）。
+//! 上下键翻页/移动，确认键打开/返回，主页 Down 长按删除留档条目。
 
 mod archive;
 mod config;
@@ -11,7 +11,6 @@ mod feed;
 mod mowen;
 mod noteatom;
 mod render;
-mod reporter;
 mod transcribe;
 mod voice;
 
@@ -25,14 +24,13 @@ use zectrix_sdk::{Device, Event, Key, KeyAction, OpenOptions};
 use archive::{Archive, Entry, SerLine};
 use config::Config;
 use mowen::MowenClient;
-use render::{RLine, Renderer};
+use render::{LineKind, RLine, Renderer, Span};
 use transcribe::Ai;
 
 /// 发给设备会话的屏幕指令
 enum ScreenCmd {
     Repaint,
     Toast(String),
-    ShowLatest,
     FeedRefreshed,
 }
 
@@ -58,6 +56,8 @@ enum Mode {
     /// 关注流列表：cursor 光标 / window 滚动窗口起点
     FeedList { cursor: usize, window: usize },
     Reader { title: String, lines: Vec<RLine>, page: usize, from: Nav },
+    /// 删除确认屏（仅删本机留档）
+    ConfirmDelete { note_id: String, title: String },
     Listening,
 }
 
@@ -154,6 +154,16 @@ impl App {
                 let idx = (*page).min(pages.len().saturating_sub(1));
                 self.renderer.draw_page(&pages[idx], title, &now, idx, pages.len())
             }
+            Mode::ConfirmDelete { title, .. } => {
+                let lines = vec![
+                    RLine::title("删除这条留档？"),
+                    RLine { kind: LineKind::Quote, spans: vec![Span::t(title.clone())] },
+                    RLine::normal("确认键：删除（仅本机留档）"),
+                    RLine::normal("其他任意键：取消"),
+                    RLine::dim("墨问里的笔记请到小程序删除"),
+                ];
+                self.renderer.draw_page(&lines, "删除", &now, 0, 1)
+            }
             Mode::Listening => {
                 let lines = vec![
                     RLine::title("正在聆听…"),
@@ -218,12 +228,7 @@ async fn main() -> Result<()> {
     let (screen_tx, mut screen_rx) = mpsc::channel::<ScreenCmd>(16);
     let (ev_tx, mut ev_rx) = mpsc::channel::<Event>(16);
     let _ = SCREEN_TX.set(screen_tx.clone());
-
-    // 晨报任务
-    if app.cfg.morning.enabled {
-        let app2 = app.clone();
-        tokio::spawn(async move { morning_loop(app2).await });
-    }
+    let _ = screen_tx;
 
     // 资讯流任务：启动即拉一次，之后按间隔刷新
     if app.cfg.feed.enabled {
@@ -304,8 +309,22 @@ async fn session_loop(
                             let mut ui = app.ui.lock().await;
                             match &mut *ui {
                                 Mode::Home { items, cursor } => {
-                                    // 列表 = [资讯入口] + 留档条目；last 为最大合法下标
+                                    // 列表 = [动态入口] + 留档条目；last 为最大合法下标
                                     let last = if app.cfg.feed.enabled { items.len() } else { items.len().saturating_sub(1) };
+                                    // Down 长按：删除当前光标留档（进入确认屏）
+                                    if action == KeyAction::Long
+                                        && key == Key::Down
+                                        && !(*cursor == 0 && app.cfg.feed.enabled)
+                                    {
+                                        let idx = if app.cfg.feed.enabled { *cursor - 1 } else { *cursor };
+                                        if let Some(e) = items.get(idx) {
+                                            let (nid, t) = (e.note_id.clone(), e.title.clone());
+                                            *ui = Mode::ConfirmDelete { note_id: nid, title: t };
+                                        }
+                                        drop(ui);
+                                        repaint(app, device).await;
+                                        continue;
+                                    }
                                     match key {
                                         Key::Up => {
                                             if *cursor > 0 { *cursor -= 1; }
@@ -380,6 +399,24 @@ async fn session_loop(
                                         };
                                     }
                                 },
+                                Mode::ConfirmDelete { note_id, title } => {
+                                    if key == Key::Confirm {
+                                        let nid = note_id.clone();
+                                        let t = title.clone();
+                                        drop(ui);
+                                        let removed = app.archive.delete_by_note_id(&nid);
+                                        *app.ui.lock().await = Mode::Home { items: app.home_items(), cursor: 0 };
+                                        repaint(app, device).await;
+                                        if removed {
+                                            notify(ScreenCmd::Toast(format!("✓ 已删除留档：{t}")));
+                                        } else {
+                                            notify(ScreenCmd::Toast("留档文件未找到".into()));
+                                        }
+                                        continue;
+                                    }
+                                    // 任意其他键取消
+                                    *ui = Mode::Home { items: app.home_items(), cursor: 0 };
+                                }
                                 Mode::Listening => {}
                             }
                         }
@@ -425,14 +462,6 @@ async fn session_loop(
                             *app2.ui.lock().await = prev_mode;
                             repaint(&app2, &dev2).await;
                         });
-                    }
-                    ScreenCmd::ShowLatest => {
-                        let items = app.home_items();
-                        if let Some(e) = items.first() {
-                            let lines: Vec<RLine> = e.lines.iter().map(|l| l.to_rline()).collect();
-                            *app.ui.lock().await = Mode::Reader { title: e.title.clone(), lines, page: 0, from: Nav::Home };
-                        }
-                        repaint(app, device).await;
                     }
                     ScreenCmd::FeedRefreshed => {
                         *app.ui.lock().await = Mode::FeedList { cursor: 0, window: 0 };
@@ -548,7 +577,8 @@ async fn handle_recording(app: Arc<App>, samples: Option<Vec<i16>>) {
 }
 
 async fn finish_create(app: &Arc<App>, title: &str, body: serde_json::Value, body_text: &str, kind: &str) {
-    let tags = if kind == "morning" { &app.cfg.mowen.tags_morning } else { &app.cfg.mowen.tags_quick };
+    let _ = kind;
+    let tags: &Vec<String> = &app.cfg.mowen.tags_quick;
     let note_id = match app.mowen.create_note(&body, app.cfg.mowen.auto_publish, tags).await {
         Ok(id) => id,
         Err(e) => {
@@ -581,64 +611,6 @@ async fn finish_create(app: &Arc<App>, title: &str, body: serde_json::Value, bod
     eprintln!("[mowen] 已发布：{title} noteId={}", entry.note_id);
     // Toast 之后 3.5s 会自动 repaint 回主页，此时留档已落盘，列表自然包含新条目
     notify(ScreenCmd::Toast(format!("✓ 已收录：{title}")));
-}
-
-/// 晨报循环
-async fn morning_loop(app: Arc<App>) {
-    loop {
-        let (h, m) = parse_hm(&app.cfg.morning.time);
-        let now = chrono::Local::now();
-        let mut next = now
-            .date_naive()
-            .and_hms_opt(h, m, 0)
-            .expect("时间合法")
-            .and_local_timezone(chrono::Local)
-            .single()
-            .unwrap_or(now);
-        if next <= now {
-            next += chrono::Duration::days(1);
-        }
-        let wait = (next - chrono::Local::now()).to_std().unwrap_or(Duration::from_secs(60));
-        eprintln!("[morning] 下一次晨报：{}（{} 秒后）", next, wait.as_secs());
-        tokio::time::sleep(wait).await;
-
-        if app.archive.today_create_count() >= app.cfg.mowen.daily_quota {
-            eprintln!("[morning] 今日配额已满，跳过");
-            continue;
-        }
-
-        let ctx = reporter::MorningCtx {
-            latitude: app.cfg.morning.latitude,
-            longitude: app.cfg.morning.longitude,
-            ai_digest: app.cfg.morning.ai_digest,
-            ai: app.ai.as_ref(),
-        };
-        let report = reporter::build(&ctx).await;
-        let body = noteatom::doc(&report.blocks);
-        let note_id = match app
-            .mowen
-            .create_note(&body, app.cfg.mowen.auto_publish, &app.cfg.mowen.tags_morning)
-            .await
-        {
-            Ok(id) => id,
-            Err(e) => {
-                eprintln!("[morning] 发布失败：{e:#}");
-                notify(ScreenCmd::Toast("✗ 晨报发布失败".into()));
-                continue;
-            }
-        };
-        app.archive.incr_quota();
-        let entry = Entry {
-            note_id,
-            kind: "morning".into(),
-            title: report.title.clone(),
-            created_at: chrono::Local::now().to_rfc3339(),
-            lines: report.lines.iter().map(SerLine::from).collect(),
-        };
-        let _ = app.archive.save(&entry);
-        eprintln!("[morning] 晨报已发布：{}", report.title);
-        notify(ScreenCmd::ShowLatest);
-    }
 }
 
 /// 拉取动态流。manual=true 表示用户在设备上主动触发（完成后回列表）；
@@ -683,9 +655,3 @@ async fn feed_loop(app: Arc<App>) {
     }
 }
 
-fn parse_hm(s: &str) -> (u32, u32) {
-    let mut it = s.split(':');
-    let h: u32 = it.next().and_then(|x| x.trim().parse().ok()).unwrap_or(7);
-    let m: u32 = it.next().and_then(|x| x.trim().parse().ok()).unwrap_or(0);
-    (h.min(23), m.min(59))
-}

@@ -27,16 +27,6 @@ api_key = ""
 chat_model = ""
 asr_model = ""
 
-[morning]
-enabled = true
-# 每天生成时刻，24 小时制
-time = "07:00"
-# open-meteo 坐标（免 key）。默认北京
-latitude = 39.90
-longitude = 116.40
-# 配置了 [ai] 时，让 AI 写一段 60 字以内的晨间小语
-ai_digest = true
-
 [feed]
 # 发现动态：主页「动态」入口。两个数据源：
 #   discover —— 调墨问桌面客户端自带的 mocli（官方 mo-discover 技能同源），

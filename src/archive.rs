@@ -132,4 +132,28 @@ impl Archive {
             serde_json::to_string(&serde_json::json!({ "date": today, "count": count })).unwrap(),
         );
     }
+
+    /// 按 noteId 删除本地留档（只影响屏幕列表；墨问里的笔记需在小程序手动删）
+    pub fn delete_by_note_id(&self, note_id: &str) -> bool {
+        let mut removed = false;
+        if let Ok(months) = std::fs::read_dir(self.root.join("archive")) {
+            for md in months.flatten() {
+                if let Ok(files) = std::fs::read_dir(md.path()) {
+                    for f in files.flatten() {
+                        let path = f.path();
+                        if let Ok(content) = std::fs::read_to_string(&path) {
+                            if let Ok(e) = serde_json::from_str::<Entry>(&content) {
+                                if e.note_id == note_id {
+                                    if std::fs::remove_file(&path).is_ok() {
+                                        removed = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        removed
+    }
 }

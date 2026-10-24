@@ -9,7 +9,6 @@ pub struct Config {
     pub zectrix: ZectrixCfg,
     pub mowen: MowenCfg,
     pub ai: AiCfg,
-    pub morning: MorningCfg,
     pub feed: FeedCfg,
     pub render: RenderCfg,
     pub app: AppCfg,
@@ -47,7 +46,6 @@ pub struct MowenCfg {
     pub base_url: String,
     pub auto_publish: bool,
     pub tags_quick: Vec<String>,
-    pub tags_morning: Vec<String>,
     pub daily_quota: u32,
 }
 
@@ -70,16 +68,6 @@ impl AiCfg {
     pub fn asr_usable(&self) -> bool {
         self.usable() && !self.asr_model.is_empty()
     }
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(default)]
-pub struct MorningCfg {
-    pub enabled: bool,
-    pub time: String,
-    pub latitude: f64,
-    pub longitude: f64,
-    pub ai_digest: bool,
 }
 
 impl Default for FeedCfg {
@@ -127,7 +115,6 @@ impl Default for Config {
             zectrix: ZectrixCfg::default(),
             mowen: MowenCfg::default(),
             ai: AiCfg::default(),
-            morning: MorningCfg::default(),
             feed: FeedCfg::default(),
             render: RenderCfg::default(),
             app: AppCfg::default(),
@@ -146,14 +133,8 @@ impl Default for MowenCfg {
             base_url: "https://open.mowen.cn".into(),
             auto_publish: false,
             tags_quick: vec!["语音速记".into()],
-            tags_morning: vec!["晨报".into()],
             daily_quota: 10,
         }
-    }
-}
-impl Default for MorningCfg {
-    fn default() -> Self {
-        Self { enabled: true, time: "07:00".into(), latitude: 39.90, longitude: 116.40, ai_digest: true }
     }
 }
 impl Default for RenderCfg {
@@ -174,9 +155,6 @@ impl Config {
         let cfg: Config = toml::from_str(&raw).context("config.toml 解析失败")?;
         if cfg.mowen.api_key.trim().is_empty() {
             bail!("config.toml 中 [mowen].api_key 为空：请到墨问小程序生成 API-KEY 后填入");
-        }
-        if !cfg.morning.time.contains(':') {
-            bail!("[morning].time 格式应为 HH:MM");
         }
         Ok(cfg)
     }

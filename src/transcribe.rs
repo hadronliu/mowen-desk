@@ -70,15 +70,6 @@ impl Ai {
         })
     }
 
-    /// 晨报小语：60 字以内的一句晨间问候/小感想
-    pub async fn morning_digest(&self, weather: &str, hitokoto: &str) -> Result<String> {
-        let prompt = format!(
-            "今天的情况：{weather}；今日一言：{hitokoto}。\
-            请写一段不超过 60 字的晨间小语，语气自然温暖，不要鸡汤味太浓，不要 emoji，不要引号。"
-        );
-        self.chat(&prompt).await
-    }
-
     async fn chat(&self, prompt: &str) -> Result<String> {
         let resp = self
             .http
