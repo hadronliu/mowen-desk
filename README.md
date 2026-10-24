@@ -26,6 +26,10 @@
 
 - **极趣 ZECTRIX Note 4**（zectrix-s3-epaper-4.2），固件 3.7.2，设置里开启「待机保持 Wi-Fi」，与电脑同一局域网
 - **墨问 Pro 会员 + API-KEY**（墨问小程序内生成；API 仅对 Pro 会员开放）
+
+> 💡 开通会员时可填邀请码 **`FKD8VGZG`**：你将获得 15 天会员 + 7 天 Pro 会员，作者也会得到会员时长，感谢支持 🙏（详见下图，或在小程序「开通会员」页输入）
+>
+> ![邀请码](docs/invite.jpg)
 - Rust stable、C/C++ 编译器与 CMake（SDK 原生 Opus 需要；macOS 装 Xcode Command Line Tools 即可）
 - （动态源）本机安装墨问桌面客户端——自动探测其内置的 `mocli`
 - （可选）任意 OpenAI 兼容 AI 服务，用于语音转写与速记整理
