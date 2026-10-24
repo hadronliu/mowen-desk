@@ -395,26 +395,20 @@ mod tests {
     }
 
     /// 生成整版晨报样张，供人工检查排版（/tmp/mowen-preview.png）
+    /// 生成主页样张（docs/sample-home.png 用）
     #[test]
-    fn preview_morning_page() {
+    fn preview_home_page() {
         let r = renderer();
         let lines = vec![
-            RLine::title("10月24日 · 周五 · 晨报"),
-            RLine::normal("今日 11 ~ 22°C · 大致晴 · 风 12 km/h"),
-            RLine {
-                kind: LineKind::Quote,
-                spans: vec![
-                    Span::t("人不是因为美丽才可爱，而是因为可爱才美丽。"),
-                    Span::b(" —— 列夫·托尔斯泰"),
-                ],
-            },
-            RLine::normal("清晨的光落在桌角，墨水屏亮起今天的日报。愿你今天做的事，都比昨天顺手一点，说话有人认真听，写字有人认真读。"),
-            RLine::normal("第二条正文段落，用来检验段间距和多段落的排版效果，顺便测试一下 English words mixed 中文 mixed digit 12345 的混排情况。"),
-            RLine::dim("—— 长按确认键说话速记 · 上下键翻页 ——"),
+            RLine::title("墨问桌垫"),
+            RLine::item("动态 · 120 条", true),
+            RLine::item("10-24 15:02 速记 20261024-145023", false),
+            RLine::item("10-24 14:43 速记 20261024-144351", false),
+            RLine::normal("长按确认键 1 秒说话，"),
+            RLine::normal("松开即自动发到墨问。"),
+            RLine::dim("今日已发 4/10 · 上下移动 确认打开"),
         ];
-        let pages = r.paginate(&lines);
-        assert!(pages.len() >= 2, "内容应超过一页，实际 {} 页", pages.len());
-        let png = r.draw_page(&pages[0], "墨问桌垫", "07:00", 0, pages.len());
-        std::fs::write(std::env::temp_dir().join("mowen-preview.png"), &png).unwrap();
+        let png = r.draw_page(&lines, "墨问桌垫", "15:04", 0, 1);
+        std::fs::write(std::env::temp_dir().join("mowen-home-preview.png"), &png).unwrap();
     }
 }

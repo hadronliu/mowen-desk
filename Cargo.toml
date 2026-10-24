@@ -1,12 +1,22 @@
 [package]
 name = "mowen-desk"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "墨问桌垫：极趣 Note 4 墨水屏 × 墨问 —— 语音速记机 + 晨报终端"
+description = "墨问桌垫：极趣 Note 4 墨水屏 × 墨问 —— 语音速记机 + 动态阅读器"
 license = "MIT"
+readme = "README.md"
+repository = "https://github.com/your-name/mowen-desk"
+keywords = ["e-ink", "zectrix", "mowen", "epaper", "notes"]
+categories = ["command-line-utilities"]
 
 [dependencies]
-zectrix-sdk = { path = "vendor/zectrix-local-push-sdk" }
+# 设备 SDK：默认走 git 依赖（见 README「设备 SDK」一节）。
+# 本地开发若无法访问 GitHub，可用 vendor 目录补丁：
+#   mkdir -p .cargo && cat > .cargo/config.toml <<'EOF'
+#   [patch."https://github.com/itopinion/zectrix-local-push-sdk"]
+#   zectrix-sdk = { path = "vendor/zectrix-local-push-sdk" }
+#   EOF
+zectrix-sdk = { git = "https://github.com/itopinion/zectrix-local-push-sdk" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "fs", "sync", "signal", "process"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "rustls-tls"] }
 serde = { version = "1", features = ["derive"] }

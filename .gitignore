@@ -1,4 +1,20 @@
-/target
+# 本地配置与数据（含 API Key，切勿上传）
 /config.toml
-/data
+/data/
+
+# 构建产物
+/target
 vendor/zectrix-local-push-sdk/target
+
+# 本地开发用 SDK 补丁（网络受限时指向 vendor/，仓库默认走 git 依赖）
+/.cargo/
+/vendor/
+
+# IDE / 系统
+.DS_Store
+*.iml
+.idea/
+.vscode/
+
+# 锁文件含本地绝对路径，且依赖解析因 patch 方式而异，不入库
+/Cargo.lock
