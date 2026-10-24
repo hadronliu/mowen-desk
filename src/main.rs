@@ -192,6 +192,7 @@ async fn repaint(app: &Arc<App>, device: &Arc<Device>) {
             }
         }
     }
+    eprintln!("[screen] 设备持续忙碌，放弃本次推图（下次按键会重推）");
 }
 
 #[tokio::main]
@@ -417,7 +418,10 @@ async fn session_loop(
                                     // 任意其他键取消
                                     *ui = Mode::Home { items: app.home_items(), cursor: 0 };
                                 }
-                                Mode::Listening => {}
+                                Mode::Listening => {
+                                    // 保险：录音事件若丢失，任何按键强制退出聆听态
+                                    *ui = Mode::Home { items: app.home_items(), cursor: 0 };
+                                }
                             }
                         }
                         repaint(app, device).await;
@@ -431,6 +435,9 @@ async fn session_loop(
                         tokio::spawn(async move {
                             handle_recording(app2, audio.map(|c| c.samples)).await;
                         });
+                        // 录音结束立即回主页；后续「已收录」提示的 3.5s 恢复也回主页，
+                        // 不再把 Listening 当"上一个界面"（否则状态机卡在吞按键的聆听态）
+                        *app.ui.lock().await = Mode::Home { items: app.home_items(), cursor: 0 };
                     }
                     Event::Disconnected { reason } => {
                         anyhow::bail!("设备断开：{reason:?}");
